@@ -1,0 +1,6 @@
+opendartreader
+finance-datareader
+polars
+psycopg2-binary
+requests
+python-dotenv
