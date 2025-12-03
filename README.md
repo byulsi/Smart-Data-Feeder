@@ -62,6 +62,7 @@ DATABASE_URL=postgresql://postgres:password@db.supabase.co:5432/postgres
 # 가상환경 생성 및 패키지 설치
 python3 -m venv venv
 source venv/bin/activate
+python3 -m pip install --upgrade pip
 pip install -r requirements.txt
 
 # 데이터베이스 테이블 생성 (Supabase SQL Editor에서 schema.sql 실행 권장)
