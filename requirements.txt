@@ -1,6 +1,7 @@
+urllib3<2.0
 opendartreader
 finance-datareader
 polars
-psycopg2-binary
+
 requests
 python-dotenv

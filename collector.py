@@ -31,7 +31,7 @@ def collect_all(ticker):
     print("\n[3/4] Collecting Disclosures...")
     try:
         disclosures_collector = DisclosuresCollector()
-        disclosures_collector.fetch_disclosures(ticker, days=365)
+        disclosures_collector.fetch_disclosures(ticker, days=1095)
     except Exception as e:
         print(f"Error collecting disclosures: {e}")
 

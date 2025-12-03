@@ -29,3 +29,16 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# Local Database
+data.db
+data.db-shm
+data.db-wal
+
+# Temporary Scripts
+debug_env.py
+fix_env.py
+test_api.py
+web/test-db.js
+docs_cache/
+find_region.py

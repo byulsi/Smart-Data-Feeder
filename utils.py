@@ -1,74 +1,127 @@
+import sqlite3
 import os
-import psycopg2
-from psycopg2.extras import execute_values
-from dotenv import load_dotenv
+from datetime import datetime, date
 
-load_dotenv()
+DB_FILE = "data.db"
 
 def get_db_connection():
-    """Establishes a connection to the Supabase PostgreSQL database."""
-    try:
-        # Prefer DATABASE_URL if available
-        db_url = os.getenv("DATABASE_URL")
-        if db_url:
-            conn = psycopg2.connect(db_url)
-            return conn
-        
-        # Fallback to individual credentials if needed (though URL is standard for Supabase)
-        host = os.getenv("SUPABASE_HOST", "db.supabase.co")
-        user = os.getenv("SUPABASE_USER", "postgres")
-        password = os.getenv("SUPABASE_PASSWORD")
-        dbname = os.getenv("SUPABASE_DB", "postgres")
-        
-        if not password:
-             raise ValueError("DATABASE_URL or SUPABASE_PASSWORD must be set in .env")
+    """Establishes a connection to the local SQLite database."""
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row
+    return conn
 
-        conn = psycopg2.connect(
-            host=host,
-            user=user,
-            password=password,
-            dbname=dbname
-        )
-        return conn
-    except Exception as e:
-        print(f"Error connecting to database: {e}")
-        raise
+def init_db():
+    """Initializes the database with tables if they don't exist."""
+    if os.path.exists(DB_FILE) and os.path.getsize(DB_FILE) > 0:
+        return
+
+    print("Initializing local SQLite database...")
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # SQLite compatible schema
+    schema = """
+    CREATE TABLE IF NOT EXISTS companies (
+        ticker TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        sector TEXT,
+        market_type TEXT,
+        desc_summary TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS financials (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ticker TEXT NOT NULL,
+        year INTEGER NOT NULL,
+        quarter INTEGER NOT NULL,
+        revenue INTEGER,
+        op_profit INTEGER,
+        net_income INTEGER,
+        assets INTEGER,
+        liabilities INTEGER,
+        equity INTEGER,
+        ocf INTEGER,
+        is_estimated BOOLEAN DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(ticker, year, quarter),
+        FOREIGN KEY(ticker) REFERENCES companies(ticker)
+    );
+
+    CREATE TABLE IF NOT EXISTS disclosures (
+        rcept_no TEXT PRIMARY KEY,
+        ticker TEXT NOT NULL,
+        report_nm TEXT NOT NULL,
+        rcept_dt DATE NOT NULL,
+        flr_nm TEXT,
+        url TEXT,
+        summary_body TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(ticker) REFERENCES companies(ticker)
+    );
+
+    CREATE TABLE IF NOT EXISTS market_daily (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ticker TEXT NOT NULL,
+        date DATE NOT NULL,
+        close REAL,
+        open REAL,
+        high REAL,
+        low REAL,
+        volume INTEGER,
+        ma5 REAL,
+        ma20 REAL,
+        ma60 REAL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(ticker, date),
+        FOREIGN KEY(ticker) REFERENCES companies(ticker)
+    );
+    """
+    cursor.executescript(schema)
+    conn.commit()
+    conn.close()
+    print("Database initialized.")
 
 def upsert_data(table, data, conflict_columns, update_columns=None):
     """
-    Upserts data into a table.
-    data: List of dictionaries matching table columns.
-    conflict_columns: List of columns to check for conflict (e.g. ['ticker']).
-    update_columns: List of columns to update on conflict. If None, updates all except conflict columns.
+    Upserts data into a table using SQLite.
     """
     if not data:
         return
 
+    # Ensure DB is initialized
+    init_db()
+
     conn = get_db_connection()
     cursor = conn.cursor()
-    
-    columns = data[0].keys()
-    query = f"INSERT INTO {table} ({','.join(columns)}) VALUES %s"
-    
-    conflict_str = ','.join(conflict_columns)
-    
-    if update_columns is None:
-        update_columns = [col for col in columns if col not in conflict_columns]
-        
-    update_set = ', '.join([f"{col} = EXCLUDED.{col}" for col in update_columns])
-    
-    query += f" ON CONFLICT ({conflict_str}) DO UPDATE SET {update_set}"
-    
-    values = [[row[col] for col in columns] for row in data]
-    
+
     try:
-        execute_values(cursor, query, values)
+        keys = data[0].keys()
+        columns = ', '.join(keys)
+        placeholders = ', '.join(['?'] * len(keys))
+        
+        # SQLite UPSERT syntax: INSERT INTO ... ON CONFLICT (...) DO UPDATE SET ...
+        conflict_str = ', '.join(conflict_columns)
+        
+        if update_columns is None:
+            # Update all columns except conflict columns
+            update_columns = [k for k in keys if k not in conflict_columns]
+            
+        update_set = ', '.join([f"{col}=excluded.{col}" for col in update_columns])
+        
+        sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
+        if conflict_columns:
+            sql += f" ON CONFLICT({conflict_str}) DO UPDATE SET {update_set}"
+            
+        values = [tuple(row[k] for k in keys) for row in data]
+        
+        cursor.executemany(sql, values)
         conn.commit()
         print(f"Successfully upserted {len(data)} rows into {table}.")
+        
     except Exception as e:
+        print(f"Error upserting data to {table}: {e}")
         conn.rollback()
-        print(f"Error upserting data: {e}")
         raise
     finally:
-        cursor.close()
         conn.close()
