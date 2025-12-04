@@ -1,9 +1,10 @@
 import os
 import OpenDartReader
+import pandas as pd
+import re
 from datetime import datetime, timedelta
 from utils import upsert_data
 from dotenv import load_dotenv
-import re
 from bs4 import BeautifulSoup
 
 load_dotenv()
@@ -161,8 +162,14 @@ class DisclosuresCollector:
         print(f"Fetching disclosures for {ticker} from {start_date} to {end_date}...")
         
         try:
-            # Fetch list - Periodic Reports (kind='A')
-            df = self.dart.list(ticker, start=start_date, end=end_date, kind='A')
+            # Find corp_code
+            corp_code = self.dart.find_corp_code(ticker)
+            if not corp_code:
+                print(f"Could not find corp_code for {ticker}")
+                return
+
+            # Fetch list - All disclosures (filter locally)
+            df = self.dart.list(corp_code, start=start_date, end=end_date)
             
             if df is None or df.empty:
                 print(f"No periodic disclosures found for {ticker}")
@@ -177,6 +184,9 @@ class DisclosuresCollector:
                 rcept_dt_str = row['rcept_dt'] # YYYYMMDD
                 rcept_dt = datetime.strptime(rcept_dt_str, "%Y%m%d").date()
                 rcept_no = row['rcept_no']
+                
+                print(f"DEBUG: Loop start for {report_nm}")
+                xml_text = None
                 
                 is_annual = "사업보고서" in report_nm
                 is_quarterly = "분기보고서" in report_nm or "반기보고서" in report_nm
@@ -258,6 +268,42 @@ class DisclosuresCollector:
             )
             print(f"Saved {len(disclosures_data)} disclosures for {ticker}")
 
+            # 3. Extract R&D Expenses
+            if xml_text:
+                try:
+                    from bs4 import BeautifulSoup
+                    soup = BeautifulSoup(xml_text, 'lxml')
+
+                    rnd_expenses = self.extract_rnd_expenses(soup)
+                    if rnd_expenses:
+                        print(f"Extracted R&D Expenses: {rnd_expenses:,}")
+                        
+                        # Parse period from report name usually "(YYYY.MM)"
+                        match = re.search(r'\((\d{4})\.(\d{2})\)', report_nm)
+                        if match:
+                            year = int(match.group(1))
+                            month = int(match.group(2))
+                            quarter = (month - 1) // 3 + 1
+                            
+                            if "사업보고서" in report_nm:
+                                quarter = 0
+                            
+                            upsert_data(
+                                table="financials",
+                                data=[{
+                                    "ticker": ticker,
+                                    "year": year,
+                                    "quarter": quarter,
+                                    "rnd_expenses": rnd_expenses
+                                }],
+                                conflict_columns=["ticker", "year", "quarter"],
+                                update_columns=["rnd_expenses"]
+                            )
+                            print(f"Updated R&D expenses for {ticker} ({year} Q{quarter})")
+                except Exception as e:
+                    print(f"Error extracting R&D: {e}")
+
+            # 4. Save Narratives
             # Upsert narratives
             if narratives_to_save:
                 # Let's check if I can add a unique index dynamically or just live with duplicates for MVP (and clear table before run).
@@ -274,6 +320,48 @@ class DisclosuresCollector:
             
         except Exception as e:
             print(f"Error fetching disclosures: {e}")
+
+    def extract_rnd_expenses(self, soup):
+        """
+        Extracts Total R&D Expenses from the report XML.
+        Returns the amount in KRW (assuming unit is Million KRW if detected, or raw).
+        """
+        tables = soup.find_all('table')
+        for table in tables:
+            text = table.get_text()
+            if "연구개발비" in text and ("계" in text or "합계" in text):
+                rows = table.find_all('tr')
+                for row in rows:
+                    cols = row.find_all(['td', 'th'])
+                    cols_text = [ele.get_text(strip=True) for ele in cols]
+                    
+                    if not cols_text:
+                        continue
+                        
+                    # Check for Total row
+                    if "연구개발비용 총계" in cols_text[0] or "연구개발비용 계" in cols_text[0] or ("연구개발비" in cols_text[0] and "계" in cols_text[0]):
+                        # Extract first value column
+                        if len(cols_text) > 1:
+                            val_str = cols_text[1]
+                            # Clean
+                            val_str = val_str.replace(',', '').replace('△', '-')
+                            try:
+                                val = int(val_str)
+                                # Check unit. Usually Million KRW.
+                                unit_mult = 1
+                                if "(단위 : 백만원)" in text or "(단위: 백만원)" in text or "(단위:백만원)" in text:
+                                    unit_mult = 1_000_000
+                                elif "(단위 : 원)" in text:
+                                    unit_mult = 1
+                                else:
+                                    # Heuristic: if value < 100,000,000,000 (100 Billion), it's likely Million or Thousand.
+                                    if val > 0 and val < 1_000_000_000_000: # Less than 1 Trillion raw
+                                        unit_mult = 1_000_000
+                                
+                                return val * unit_mult
+                            except:
+                                pass
+        return None
 
 if __name__ == "__main__":
     collector = DisclosuresCollector()

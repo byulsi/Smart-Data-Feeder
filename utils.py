@@ -55,6 +55,7 @@ def init_db():
         roa REAL,
         debt_ratio REAL,
         current_ratio REAL,
+        rnd_expenses INTEGER,
         is_estimated BOOLEAN DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(ticker, year, quarter),

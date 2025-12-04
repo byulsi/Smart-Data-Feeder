@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import db from '@/lib/db'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const query = searchParams.get('query') || searchParams.get('ticker')
@@ -28,16 +30,24 @@ export async function GET(request: Request) {
     
     const ticker = company.ticker; // Use the found company's ticker for subsequent queries
 
-    // 2. Fetch Financials (Summary) - Latest year
-    const financials = db.prepare('SELECT * FROM financials WHERE ticker = ? ORDER BY year DESC, quarter DESC LIMIT 1').all(ticker)
+    // 2. Fetch Financials (History - last 4 quarters/years)
+    const financials = db.prepare('SELECT * FROM financials WHERE ticker = ? ORDER BY year DESC, quarter DESC LIMIT 4').all(ticker)
 
-    // 3. Fetch Market Data (History)
-    const market = db.prepare('SELECT * FROM market_daily WHERE ticker = ? ORDER BY date ASC').all(ticker)
+    // 3. Fetch Market Data (History - last 365 days)
+    const market = db.prepare('SELECT * FROM market_daily WHERE ticker = ? ORDER BY date ASC LIMIT 365').all(ticker)
+
+    // 4. Fetch Shareholders (Top 5)
+    const shareholders = db.prepare('SELECT * FROM shareholders WHERE ticker = ? ORDER BY share_ratio DESC LIMIT 5').all(ticker)
+
+    // 5. Fetch Segments (Latest period)
+    const segments = db.prepare('SELECT * FROM company_segments WHERE ticker = ? ORDER BY period DESC LIMIT 10').all(ticker)
 
     return NextResponse.json({
       company,
       financials: financials || [],
-      market: market || []
+      market: market || [],
+      shareholders: shareholders || [],
+      segments: segments || []
     })
   } catch (error: any) {
     console.error('Database error:', error)

@@ -14,7 +14,7 @@ class MarkdownGenerator:
 
     def _fetch_financials(self):
         query = """
-            SELECT year, quarter, revenue, op_profit, net_income, assets, liabilities, equity
+            SELECT year, quarter, revenue, op_profit, net_income, assets, liabilities, equity, rnd_expenses
             FROM financials 
             WHERE ticker = ? 
             ORDER BY year DESC, quarter DESC
@@ -60,6 +60,9 @@ class MarkdownGenerator:
             financials_df['revenue'] = financials_df['revenue'].apply(lambda x: f"{x:,}")
             financials_df['op_profit'] = financials_df['op_profit'].apply(lambda x: f"{x:,}")
             financials_df['net_income'] = financials_df['net_income'].apply(lambda x: f"{x:,}")
+            if 'rnd_expenses' in financials_df.columns:
+                financials_df['rnd_expenses'] = financials_df['rnd_expenses'].apply(lambda x: f"{x:,}" if pd.notnull(x) else "-")
+                financials_df = financials_df.rename(columns={'rnd_expenses': 'R&D Expenses'})
             
             md += financials_df.to_markdown(index=False)
         else:

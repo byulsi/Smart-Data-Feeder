@@ -2,13 +2,29 @@
 
 Smart Data Feeder is a Python-based data collection and processing pipeline designed to feed high-quality financial data into LLMs (Large Language Models) like Gemini. It fetches data from DART (OpenDART) and FinanceDataReader, processes it into structured formats (Markdown, CSV), and provides a simple web interface for easy access.
 
-## Key Features
+## 🚀 Key Features
 
-- **Automated Data Collection**: Fetches company info, financial statements, disclosures, and market data.
-- **Deep Text Extraction**: Extracts full text from "Business Overview" sections of DART reports for qualitative analysis.
-- **Segment Data Parsing**: Extracts "Sales by Business Division" (e.g., DX, DS, SDC) from unstructured HTML tables in reports.
-- **LLM-Ready Output**: Generates `[Ticker]_Overview.md` and `[Ticker]_Narratives.md` optimized for RAG (Retrieval-Augmented Generation).
-- **Web Dashboard**: A Next.js-based UI to search companies, view key metrics (Est. Date, Listing Date), and download processed data.
+*   **Automated Data Collection**: Fetches data from multiple sources:
+    *   **OpenDART**: Financial statements (Revenue, Profit, Assets, Liabilities), Business Reports (R&D Expenses), Major Shareholders.
+    *   **FinanceDataReader**: Market Cap, Shares Outstanding, Sector Info, Daily Price Data.
+*   **Comprehensive Financial Analysis**:
+    *   **Growth**: Revenue, Operating Profit, Net Income growth rates.
+    *   **Profitability**: OPM, NPM, ROE, ROA.
+    *   **Stability**: Debt Ratio, Current Ratio.
+    *   **Valuation**: PER, PBR, EPS, BPS.
+    *   **Investment**: R&D Expenses, Dividend Yield (planned).
+*   **Deep Business Insights**:
+    *   **Segment Analysis**: Revenue and profit breakdown by business division.
+    *   **R&D Investment**: Track research and development spending trends.
+    *   **Shareholding**: Major shareholder structure and ownership ratios.
+*   **AI-Ready Output**:
+    *   Generates structured Markdown reports (`Overview.md`, `Narratives.md`) optimized for LLM ingestion (RAG).
+    *   Stores raw data in SQLite for easy querying.
+*   **Web Dashboard**:
+    *   Search companies by Ticker or Name.
+    *   View key metrics and charts.
+    *   Download reports directly from the browser.
+*   **Dockerized Deployment**: Easy setup with Docker Compose.d data.
 
 ## Tech Stack
 

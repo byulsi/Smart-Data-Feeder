@@ -34,6 +34,7 @@ create table if not exists financials (
   roa float, -- Return on Assets
   debt_ratio float, -- Liabilities / Equity
   current_ratio float, -- Current Assets / Current Liabilities
+  rnd_expenses bigint, -- Research & Development Expenses
   is_estimated boolean default false,
   created_at datetime default current_timestamp,
   unique(ticker, year, quarter)

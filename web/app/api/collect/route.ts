@@ -23,33 +23,30 @@ export async function POST(request: Request) {
     
     console.log(`Executing command: ${command}`)
 
-    return new Promise((resolve) => {
-      exec(command, { cwd: projectRoot }, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`exec error: ${error}`)
-          console.error(`stderr: ${stderr}`)
-          resolve(NextResponse.json({ error: 'Collection failed', details: stderr }, { status: 500 }))
-          return
-        }
-        
-        console.log(`stdout: ${stdout}`)
-        
-        // After collection, we also need to run the markdown generator to ensure artifacts are ready
-        // Although the collector might be enough if the web app reads from DB directly.
-        // But for "Download .md", we need the generator.
-        
+    const util = require('util');
+    const execPromise = util.promisify(exec);
+
+    try {
+        const { stdout, stderr } = await execPromise(command, { cwd: projectRoot });
+        console.log(`stdout: ${stdout}`);
+        if (stderr) console.error(`stderr: ${stderr}`);
+
+        // Run generator
         const generatorPath = path.join(projectRoot, 'processors', 'markdown_generator.py')
         const genCommand = `python3 "${generatorPath}"`
         
-        exec(genCommand, { cwd: projectRoot }, (genError, genStdout, genStderr) => {
-             if (genError) {
-                 console.error(`Generator error: ${genError}`)
-                 // We don't fail the whole request if generator fails, but it's good to know
-             }
-             resolve(NextResponse.json({ success: true, message: 'Collection completed' }))
-        })
-      })
-    })
+        try {
+             await execPromise(genCommand, { cwd: projectRoot });
+        } catch (genError) {
+             console.error(`Generator error: ${genError}`)
+        }
+
+        return NextResponse.json({ success: true, message: 'Collection completed' })
+
+    } catch (error: any) {
+        console.error(`exec error: ${error}`)
+        return NextResponse.json({ error: 'Collection failed', details: error.stderr || error.message }, { status: 500 })
+    }
 
   } catch (error: any) {
     console.error('API error:', error)
