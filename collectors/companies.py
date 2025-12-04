@@ -71,6 +71,10 @@ class CompanyCollector:
                 else:
                     listing_dt = str(row['ListingDate']).replace('-', '')
 
+            # Market Cap and Shares
+            market_cap = int(row.get('Marcap', 0))
+            shares_outstanding = int(row.get('Stocks', 0))
+
             # Summary
             summary = f"{final_name} is a {market_type} listed company in the {sector} sector."
             if est_dt:
@@ -83,6 +87,8 @@ class CompanyCollector:
                 "market_type": market_type,
                 "est_dt": est_dt,
                 "listing_dt": listing_dt,
+                "market_cap": market_cap,
+                "shares_outstanding": shares_outstanding,
                 "desc_summary": summary,
                 "updated_at": datetime.now()
             }

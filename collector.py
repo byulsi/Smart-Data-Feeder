@@ -3,6 +3,8 @@ from collectors.companies import CompanyCollector
 from collectors.financials import FinancialsCollector
 from collectors.disclosures import DisclosuresCollector
 from collectors.market import MarketCollector
+from processors.markdown_generator import MarkdownGenerator
+from processors.ratios import RatioCalculator
 from datetime import datetime
 
 def collect_all(ticker):
@@ -36,12 +38,22 @@ def collect_all(ticker):
         print(f"Error collecting disclosures: {e}")
 
     # 4. Market Data (Last 1 year)
-    print("\n[4/4] Collecting Market Data...")
+    print("\n[4/6] Collecting Market Data...")
     try:
         market_collector = MarketCollector()
         market_collector.fetch_daily_data(ticker, days=365)
     except Exception as e:
         print(f"Error collecting market data: {e}")
+
+    # 5. Calculate Ratios
+    print("\n[5/6] Calculating Financial Ratios...")
+    ratio_calculator = RatioCalculator()
+    ratio_calculator.calculate_ratios(ticker)
+
+    # 6. Generate Markdown Reports
+    print("\n[6/6] Generating Markdown Reports...")
+    generator = MarkdownGenerator(ticker)
+    generator.save_files()
 
     print(f"\nData collection for {ticker} completed.")
 

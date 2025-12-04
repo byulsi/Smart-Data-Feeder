@@ -6,6 +6,8 @@ create table if not exists companies (
   market_type varchar(10),
   est_dt varchar(8), -- Establishment Date (YYYYMMDD)
   listing_dt varchar(8), -- Listing Date (YYYYMMDD)
+  market_cap bigint, -- Market Capitalization
+  shares_outstanding bigint, -- Total Shares Outstanding
   desc_summary text,
   updated_at datetime default current_timestamp
 );
@@ -22,7 +24,16 @@ create table if not exists financials (
   assets bigint,
   liabilities bigint,
   equity bigint,
+  current_assets bigint, -- New
+  current_liabilities bigint, -- New
   ocf bigint, -- Operating Cash Flow
+  eps float, -- Earnings Per Share
+  bps float, -- Book Value Per Share
+  dps float, -- Dividend Per Share
+  roe float, -- Return on Equity
+  roa float, -- Return on Assets
+  debt_ratio float, -- Liabilities / Equity
+  current_ratio float, -- Current Assets / Current Liabilities
   is_estimated boolean default false,
   created_at datetime default current_timestamp,
   unique(ticker, year, quarter)

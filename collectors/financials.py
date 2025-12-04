@@ -98,6 +98,9 @@ class FinancialsCollector:
             liabilities = get_amount(fs_cfs, ['부채총계'])
             equity = get_amount(fs_cfs, ['자본총계'])
 
+            current_assets = get_amount(fs_cfs, ['유동자산'])
+            current_liabilities = get_amount(fs_cfs, ['유동부채'])
+
             financial_data = {
                 "ticker": ticker,
                 "year": year,
@@ -108,6 +111,8 @@ class FinancialsCollector:
                 "assets": assets,
                 "liabilities": liabilities,
                 "equity": equity,
+                "current_assets": current_assets,
+                "current_liabilities": current_liabilities,
                 "ocf": 0, 
                 "is_estimated": False
             }
