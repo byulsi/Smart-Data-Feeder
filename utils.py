@@ -100,6 +100,7 @@ def init_db():
         title TEXT,
         content TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(ticker, period, section_type),
         FOREIGN KEY(ticker) REFERENCES companies(ticker)
     );
     """

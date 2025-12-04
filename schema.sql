@@ -78,7 +78,8 @@ create table if not exists company_narratives (
   section_type varchar(50) not null, -- 'Market', 'Strategy', 'Business', 'MD&A', 'News'
   title varchar(255), -- Optional title for the section
   content text not null,
-  created_at datetime default current_timestamp
+  created_at datetime default current_timestamp,
+  unique(ticker, period, section_type)
 );
 
 -- Indexing for Performance

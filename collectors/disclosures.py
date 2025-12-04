@@ -260,20 +260,6 @@ class DisclosuresCollector:
 
             # Upsert narratives
             if narratives_to_save:
-                # Note: company_narratives doesn't have a unique constraint on (ticker, period, section_type) in schema.sql yet?
-                # Wait, I added it in utils.py? No, I added the table but didn't specify UNIQUE in utils.py replacement.
-                # Let's check utils.py content again.
-                # In Step 200 replacement, I added:
-                # CREATE TABLE IF NOT EXISTS company_narratives ( ... );
-                # It did NOT have UNIQUE constraint.
-                # So upsert_data might fail if I try to UPSERT without conflict columns.
-                # Or it will just INSERT duplicates.
-                # I should probably add a UNIQUE constraint or delete old ones.
-                # For now, let's just INSERT. But duplicates are bad.
-                # I will try to use a pseudo-upsert by deleting first? No, upsert_data handles conflict.
-                # Since I can't change schema easily without dropping table (SQLite limitation for ALTER TABLE ADD CONSTRAINT),
-                # I will just insert.
-                # Actually, I can use `INSERT OR REPLACE` if I had a primary key or unique index.
                 # Let's check if I can add a unique index dynamically or just live with duplicates for MVP (and clear table before run).
                 # The user clears DB often.
                 # But to be safe, I will delete existing narratives for this ticker/period before inserting.
@@ -282,7 +268,7 @@ class DisclosuresCollector:
                 upsert_data(
                     table="company_narratives",
                     data=narratives_to_save,
-                    conflict_columns=[] # No conflict columns, so it will INSERT.
+                    conflict_columns=["ticker", "period", "section_type"]
                 )
                 print(f"Saved {len(narratives_to_save)} narratives for {ticker}")
             
