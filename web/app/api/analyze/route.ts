@@ -29,15 +29,15 @@ export async function GET(request: Request) {
     const ticker = company.ticker; // Use the found company's ticker for subsequent queries
 
     // 2. Fetch Financials (Summary) - Latest year
-    const financials = db.prepare('SELECT * FROM financials WHERE ticker = ? ORDER BY year DESC, quarter DESC LIMIT 1').get(ticker)
+    const financials = db.prepare('SELECT * FROM financials WHERE ticker = ? ORDER BY year DESC, quarter DESC LIMIT 1').all(ticker)
 
-    // 3. Fetch Market Data (Latest)
-    const market = db.prepare('SELECT * FROM market_daily WHERE ticker = ? ORDER BY date DESC LIMIT 1').get(ticker)
+    // 3. Fetch Market Data (History)
+    const market = db.prepare('SELECT * FROM market_daily WHERE ticker = ? ORDER BY date ASC').all(ticker)
 
     return NextResponse.json({
       company,
-      financials: financials || null,
-      market: market || null
+      financials: financials || [],
+      market: market || []
     })
   } catch (error: any) {
     console.error('Database error:', error)
