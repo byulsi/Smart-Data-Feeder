@@ -1,101 +1,89 @@
-# Smart Data Feeder (스마트 개미를 위한 백데이터 생성기)
+# Smart Data Feeder (MVP)
 
-**Smart Data Feeder**는 투자 분석에 필요한 방대한 금융 정보(재무제표, 공시, 주가 등)를 수집하여, AI(Gemini, ChatGPT 등)가 이해하기 쉬운 **Markdown** 및 **CSV** 형식으로 변환해주는 도구입니다.
+Smart Data Feeder is a Python-based data collection and processing pipeline designed to feed high-quality financial data into LLMs (Large Language Models) like Gemini. It fetches data from DART (OpenDART) and FinanceDataReader, processes it into structured formats (Markdown, CSV), and provides a simple web interface for easy access.
 
-흩어진 정보를 일일이 찾는 수고를 덜고, AI를 활용한 데이터 기반의 합리적인 투자를 돕기 위해 만들어졌습니다.
+## Key Features
 
-## 🚀 주요 기능
+- **Automated Data Collection**: Fetches company info, financial statements, disclosures, and market data.
+- **Deep Text Extraction**: Extracts full text from "Business Overview" sections of DART reports for qualitative analysis.
+- **Segment Data Parsing**: Extracts "Sales by Business Division" (e.g., DX, DS, SDC) from unstructured HTML tables in reports.
+- **LLM-Ready Output**: Generates `[Ticker]_Overview.md` and `[Ticker]_Narratives.md` optimized for RAG (Retrieval-Augmented Generation).
+- **Web Dashboard**: A Next.js-based UI to search companies, view key metrics (Est. Date, Listing Date), and download processed data.
 
-1.  **기업 종합 스냅샷 (Corporate Overview)**
-    *   기업 개요, 주요 사업 요약
-    *   최근 3년/분기 핵심 재무제표 (매출, 영업이익, 순이익, 부채비율 등)
-    *   최근 공시 목록 요약
-    *   **결과물:** `[종목명]_Overview.md`
+## Tech Stack
 
-2.  **심층 분석 텍스트 (Deep Dive Narratives)**
-    *   주요 공시(사업보고서 등) 원문 링크 및 요약
-    *   **결과물:** `[종목명]_Narratives.md`
+- **Backend**: Python 3.9+
+    - `OpenDartReader`: DART API integration
+    - `FinanceDataReader`: Market data
+    - `BeautifulSoup4`: HTML/XML parsing
+    - `SQLite`: Local database
+- **Frontend**: Next.js 14 (App Router), Tailwind CSS
+- **Deployment**: Localhost (MVP)
 
-3.  **주가 데이터 (Market Data)**
-    *   최근 1년 일봉 데이터 (OHLCV) 및 이동평균선(5, 20, 60일)
-    *   **결과물:** `[종목명]_Chart.csv`
+## Setup & Usage
 
-## 🛠 기술 스택
+### Prerequisites
+1.  Python 3.9+
+2.  Node.js 18+
+3.  DART API Key (Get it from [OpenDART](https://opendart.fss.or.kr/))
 
-*   **Backend:** Python 3.8+
-    *   `FinanceDataReader`: 주가 및 기업 기본 정보 수집
-    *   `OpenDartReader`: DART 공시 정보 수집
-    *   `requests`: 공공데이터포털(금융위) API 연동
-    *   `pandas`, `polars`: 데이터 가공
-*   **Database:** PostgreSQL (Supabase)
-*   **Frontend:** Next.js 14 (App Router), Tailwind CSS
-    *   데이터 조회 및 다운로드 대시보드
+### Installation
 
-## ⚙️ 설치 및 실행 방법
+1.  **Clone the repository**
+    ```bash
+    git clone https://github.com/byulsi/Smart-Data-Feeder.git
+    cd Smart-Data-Feeder
+    ```
 
-### 1. 사전 준비 (Prerequisites)
-*   Python 3.8 이상
-*   Node.js 18 이상
-*   **Supabase** 프로젝트 (PostgreSQL)
-*   **API 키 발급**:
-    *   [DART Open API](https://opendart.fss.or.kr/) (API Key)
-    *   [공공데이터포털](https://www.data.go.kr/) (금융위원회 기업기본정보/재무정보 서비스키)
+2.  **Install Python dependencies**
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-### 2. 환경 변수 설정 (.env)
-프로젝트 루트에 `.env` 파일을 생성하고 아래 내용을 입력하세요.
+3.  **Set up Environment Variables**
+    Create a `.env` file in the root directory:
+    ```env
+    DART_API_KEY=your_api_key_here
+    ```
 
-```ini
-# OpenDART API Key
-DART_API_KEY=your_dart_api_key
+4.  **Install Frontend dependencies**
+    ```bash
+    cd web
+    npm install
+    cd ..
+    ```
 
-# 공공데이터포털 (금융위원회) API Key
-FSC_API_KEY=your_fsc_service_key
+### Running the Web App (Recommended)
 
-# Supabase 설정
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_KEY=your_anon_key
-DATABASE_URL=postgresql://postgres:password@db.supabase.co:5432/postgres
-```
+The easiest way to use the Smart Data Feeder is via the Web UI.
 
-### 3. 백엔드 설정 및 데이터 수집
-```bash
-# 가상환경 생성 및 패키지 설치
-python3 -m venv venv
-source venv/bin/activate
-python3 -m pip install --upgrade pip
-pip install -r requirements.txt
-
-# 데이터베이스 테이블 생성 (Supabase SQL Editor에서 schema.sql 실행 권장)
-# 또는 별도 DB 툴 사용
-
-# 데이터 수집 실행 (예: 삼성전자 005930)
-python collector.py 005930
-```
-
-### 4. 웹 애플리케이션 실행
 ```bash
 cd web
-npm install
 npm run dev
 ```
-브라우저에서 `http://localhost:3000` 접속.
 
-## 📂 프로젝트 구조
+1.  Visit `http://localhost:3000`.
+2.  **Search**: Enter a ticker (e.g., `005930` for Samsung, `000660` for SK Hynix).
+3.  **Collect**: If data is missing, click the **"Collect Data Now"** button. The system will automatically run the Python collector in the background.
+4.  **Download**: Once data is ready, download the `Overview.md` report.
 
-```
-.
-├── collector.py          # 데이터 수집 메인 스크립트
-├── collectors/           # 데이터 소스별 수집 모듈
-│   ├── companies.py      # 기업 개요
-│   ├── financials.py     # 재무 정보
-│   ├── disclosures.py    # 공시 목록
-│   └── market.py         # 주가 데이터
-├── processors/           # 데이터 가공 및 파일 생성 모듈
-├── web/                  # Next.js 프론트엔드
-├── utils.py              # DB 연결 유틸리티
-├── requirements.txt      # Python 의존성
-└── schema.sql            # DB 스키마
+### Running the Collector Manually (Optional)
+
+You can still run the collector via terminal if preferred:
+
+```bash
+python3 collector.py 005930
 ```
 
-## 📝 라이선스
-MIT License
+## Project Structure
+
+- `collectors/`: Modules for fetching data (companies, financials, disclosures, market).
+- `processors/`: Logic for processing data and generating Markdown.
+- `web/`: Next.js frontend application.
+- `schema.sql`: Database schema definition.
+- `utils.py`: Database utility functions.
+- `collector.py`: Main entry point for data collection.
+
+## License
+
+MIT

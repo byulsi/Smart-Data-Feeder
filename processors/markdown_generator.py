@@ -66,18 +66,27 @@ class MarkdownGenerator:
             md += "No financial data available.\n"
         
         # Dynamic Segment Performance
-        query = "SELECT * FROM company_segments WHERE ticker = ? ORDER BY division"
+        query = "SELECT * FROM company_segments WHERE ticker = ? ORDER BY period DESC, division ASC"
         segments_df = pd.read_sql(query, self.conn, params=(self.ticker,))
         
+        md += "\n\n## 2. Segment Performance (Recent)\n"
         if not segments_df.empty:
-            # Assuming all segments are for the same period for now, or we filter by latest period
-            # For MVP, just take what's there.
-            period = segments_df.iloc[0]['period']
-            md += f"\n\n## 2. Segment Performance ({period})\n"
-            
+            md += "| Period | Division | Revenue (KRW) | Op. Profit (KRW) |\n"
+            md += "| :--- | :--- | :--- | :--- |\n"
             for _, row in segments_df.iterrows():
-                md += f"- **{row['division']}:** Revenue {row['revenue']} / Op Profit {row['op_profit']}\n"
-                md += f"    - *Insight:* {row['insight']}\n"
+                # Format numbers
+                rev = row['revenue']
+                op = row['op_profit']
+                try:
+                    rev = f"{int(rev):,}"
+                except: pass
+                try:
+                    op = f"{int(op):,}"
+                except: pass
+                
+                md += f"| {row['period']} | {row['division']} | {rev} | {op} |\n"
+        else:
+            md += "No segment data available.\n"
         
         md += "\n\n## 3. Recent Disclosures\n"
         if not disclosures_df.empty:
@@ -164,11 +173,11 @@ class MarkdownGenerator:
         os.makedirs(output_dir, exist_ok=True)
         
         overview_md = self.generate_overview()
-        with open(f"{output_dir}/{self.ticker}_Overview.md", "w") as f:
+        with open(f"{output_dir}/{self.ticker}_Overview.md", "w", encoding="utf-8") as f:
             f.write(overview_md)
             
         narratives_md = self.generate_narratives()
-        with open(f"{output_dir}/{self.ticker}_Narratives.md", "w") as f:
+        with open(f"{output_dir}/{self.ticker}_Narratives.md", "w", encoding="utf-8") as f:
             f.write(narratives_md)
             
         print(f"Generated Markdown files for {self.ticker} in {output_dir}/")

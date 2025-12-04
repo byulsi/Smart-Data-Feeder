@@ -97,6 +97,34 @@ class CompanyCollector:
         except Exception as e:
             print(f"Error collecting company info: {e}")
 
+    def resolve_ticker(self, name_or_code):
+        """
+        Resolves a company name or code to a 6-digit ticker.
+        """
+        # If it looks like a ticker (digits), return it
+        if name_or_code.isdigit():
+            return name_or_code
+            
+        print(f"Resolving ticker for name: {name_or_code}...")
+        try:
+            df_krx = fdr.StockListing('KRX')
+            # Exact match first
+            row = df_krx[df_krx['Name'] == name_or_code]
+            if not row.empty:
+                return row.iloc[0]['Code']
+                
+            # Contains match (optional, might be risky)
+            # row = df_krx[df_krx['Name'].str.contains(name_or_code)]
+            # if not row.empty:
+            #     return row.iloc[0]['Code']
+                
+        except Exception as e:
+            print(f"Error resolving ticker: {e}")
+            
+        return None
+
 if __name__ == "__main__":
     collector = CompanyCollector()
+    # Test resolution
+    # print(collector.resolve_ticker("삼성전자"))
     collector.collect_and_save("005930")

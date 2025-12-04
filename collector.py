@@ -47,7 +47,16 @@ def collect_all(ticker):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Smart Data Feeder Collector")
-    parser.add_argument("ticker", type=str, help="Stock ticker (e.g., 005930)")
+    parser.add_argument("ticker", type=str, help="Stock ticker (e.g., 005930) or Name (e.g., 삼성전자)")
     args = parser.parse_args()
     
-    collect_all(args.ticker)
+    # Resolve ticker if name is provided
+    company_collector = CompanyCollector()
+    resolved_ticker = company_collector.resolve_ticker(args.ticker)
+    
+    if resolved_ticker:
+        if resolved_ticker != args.ticker:
+            print(f"Resolved '{args.ticker}' to ticker: {resolved_ticker}")
+        collect_all(resolved_ticker)
+    else:
+        print(f"Error: Could not resolve ticker for '{args.ticker}'. Please check the name or use the 6-digit ticker directly.")

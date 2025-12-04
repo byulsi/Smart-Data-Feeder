@@ -1,26 +1,37 @@
-# 📅 개발 일지 (Development Log)
+# Development Log
 
-## 2025-12-04 (오늘)
-### 📘 프로젝트 가이드 문서화
-*   **초보자를 위한 가이드 작성 (`PROJECT_GUIDE.md`)**
-    *   프로젝트의 목적(금융 데이터 수집 및 AI 가공)과 주요 용어(티커, API, DB 등)를 알기 쉽게 정리했습니다.
-    *   초기 설정부터 데이터 수집, 웹 대시보드 실행까지의 단계를 상세히 설명했습니다.
-*   **상세 아키텍처 분석 가이드로 고도화**
-    *   단순 실행법을 넘어, 시스템 구조(Collector -> SQLite -> Web)와 데이터 흐름을 시각화하여 설명했습니다.
-    *   `collector.py`(지휘자), `collectors/market.py`(현장 요원), `utils.py`(창고지기) 등 코드의 역할과 작동 원리를 비유를 통해 상세히 기술했습니다.
-    *   초보자가 코드를 수정해보며 학습할 수 있도록 '학습 팁' 섹션을 추가했습니다.
+## 2025-12-04: Phase 2, 3, & 4 Complete (MVP Finalization)
 
----
+### Summary
+Successfully completed the core MVP features including robust financial data collection, deep text extraction, and segment data parsing. The system is now capable of generating high-quality, LLM-ready datasets for Samsung Electronics.
 
-## 2025-12-03 (어제)
-### 🛠️ 데이터베이스 및 수집기 안정화
-*   **DB 연결 문제 해결**: 수집 스크립트와 웹 앱 간의 데이터베이스 연결 오류를 수정하고, 로컬 환경에 적합한 **SQLite**로 전환하여 안정성을 확보했습니다.
-*   **파일 다운로드 인코딩 수정**: 생성된 CSV/Markdown 파일의 한글 깨짐 현상 등을 해결했습니다.
+### Key Achievements
 
-### 🚀 데이터 생성 및 기능 고도화
-*   **실데이터 기반 리포트 생성**:
-    *   기존의 플레이스홀더(가짜 데이터)를 제거하고, 실제 수집된 금융 데이터를 바탕으로 `Overview.md`와 `Narratives.md`가 생성되도록 로직을 개선했습니다.
-    *   삼성전자 등 실제 기업의 재무제표, 사업 부문별 실적, 공시 요약 내용이 포함되도록 구현했습니다.
-*   **동적 데이터 수집 구현**: 하드코딩된 데이터 대신 API를 통해 실시간으로 데이터를 수집하는 파이프라인을 구축했습니다.
-*   **프론트엔드 검색 기능 강화**:
-    *   기존 티커(종목코드) 검색뿐만 아니라 **기업명 검색**이 가능하도록 기능을 개선하여 사용성을 높였습니다.
+#### 1. Financial Data Accuracy (Phase 2)
+- **Issue**: FSC API returned zero Net Income for 2023/2024.
+- **Solution**: Migrated to `OpenDartReader` to fetch financial statements directly from DART.
+- **Result**: Verified 2023 Net Income (~15.4T KRW) and 2024 Net Income (~34.4T KRW).
+
+#### 2. Deep Text Extraction (Phase 2)
+- **Feature**: Extracting the full text of "II. 사업의 내용" (Business Overview) from DART XML.
+- **Tech**: Used `OpenDartReader.document()` to get XML and regex/string manipulation to isolate the section.
+- **Impact**: Enables qualitative analysis of company business models and risks.
+
+#### 3. Segment Data Parsing (Phase 3)
+- **Feature**: Extracting "Sales by Business Division" from unstructured HTML tables.
+- **Tech**: `BeautifulSoup` for HTML parsing. Implemented heuristic logic to identify the correct table and rows (handling "DX 부문", "DS 부문" etc.).
+- **Result**: Successfully extracted Revenue and Operating Profit for DX, DS, SDC, and Harman divisions.
+
+#### 4. Web UI Enhancements
+- **Feature**: Displaying Establishment Date and Listing Date on the dashboard.
+- **Tech**: Updated `companies` table schema and `page.tsx` UI.
+
+### Verification
+- **End-to-End Test**: Reset database (`rm data.db`) and ran full collection for 005930.
+- **Artifacts**: `Overview.md` and `Narratives.md` generated with correct data.
+- **Web App**: Verified UI displays new fields and download links work.
+
+### Next Steps (Post-MVP)
+- **LLM Integration**: Implement RAG pipeline to answer questions based on `Narratives.md`.
+- **Chart Visualization**: Add charts for Financials and Segments in the Web UI.
+- **Multi-Company Support**: Test and refine parsers for other companies (e.g., Hyundai Motor, SK Hynix).
