@@ -103,34 +103,108 @@ class CompanyCollector:
         except Exception as e:
             print(f"Error collecting company info: {e}")
 
-    def resolve_ticker(self, name_or_code):
+    def resolve_ticker(self, name_or_ticker):
         """
-        Resolves a company name or code to a 6-digit ticker.
+        Resolves a company name to a ticker symbol using FinanceDataReader.
+        If input is already a 6-digit ticker, returns it as is.
         """
-        # If it looks like a ticker (digits), return it
-        if name_or_code.isdigit():
-            return name_or_code
+        # Check if it's a ticker (6 digits)
+        if name_or_ticker.isdigit() and len(name_or_ticker) == 6:
+            return name_or_ticker
             
-        print(f"Resolving ticker for name: {name_or_code}...")
+        print(f"Resolving ticker for '{name_or_ticker}'...")
         try:
-            df_krx = fdr.StockListing('KRX')
+            # Download stock listing
+            df = fdr.StockListing('KRX')
+            
+            # Search by name
             # Exact match first
-            row = df_krx[df_krx['Name'] == name_or_code]
-            if not row.empty:
-                return row.iloc[0]['Code']
+            match = df[df['Name'] == name_or_ticker]
+            if not match.empty:
+                return match.iloc[0]['Code']
                 
-            # Contains match (optional, might be risky)
-            # row = df_krx[df_krx['Name'].str.contains(name_or_code)]
-            # if not row.empty:
-            #     return row.iloc[0]['Code']
+            # Contains match
+            match = df[df['Name'].str.contains(name_or_ticker)]
+            if not match.empty:
+                found_name = match.iloc[0]['Name']
+                found_code = match.iloc[0]['Code']
+                print(f"Found '{found_name}' ({found_code})")
+                return found_code
                 
+            print(f"Could not resolve ticker for '{name_or_ticker}'")
+            return None
         except Exception as e:
             print(f"Error resolving ticker: {e}")
+            return None
+
+    def fetch_shareholders(self, ticker):
+        """
+        Fetches major shareholders using OpenDART.
+        """
+        if not self.dart:
+            return
+
+        print(f"Fetching shareholders for {ticker}...")
+        try:
+            # OpenDartReader's major_shareholders
+            # Note: OpenDartReader might not have a direct wrapper for 'major_shareholders' in all versions.
+            # If it does, it's usually .major_shareholders(corp_code)
+            # Let's check if we can use it. If not, we might need to use .list() with specific code?
+            # Actually, OpenDartReader has `major_shareholders`.
             
-        return None
+            corp_code = self.dart.find_corp_code(ticker)
+            if not corp_code:
+                return
+
+            df = self.dart.major_shareholders(corp_code)
+            if df is None or df.empty:
+                print(f"No shareholder data found for {ticker}")
+                return
+
+            shareholders_data = []
+
+            for _, row in df.iterrows():
+                # Columns based on debug output: 
+                # ['rcept_no', 'rcept_dt', 'corp_code', 'corp_name', 'report_tp', 'repror', 'stkqy', 'stkqy_irds', 'stkrt', 'stkrt_irds', 'ctr_stkqy', 'ctr_stkrt', 'report_resn']
+                
+                name = row.get('repror', '')
+                # Rel type is not explicitly provided in this API response, defaulting to 'Major Shareholder'
+                rel_type = '주요주주' 
+                
+                count_str = str(row.get('stkqy', '0'))
+                ratio_str = str(row.get('stkrt', '0'))
+                
+                # Clean numbers
+                try:
+                    count = int(count_str.replace(',', ''))
+                    ratio = float(ratio_str.replace(',', ''))
+                except:
+                    count = 0
+                    ratio = 0.0
+                
+                if name:
+                    shareholders_data.append({
+                        "ticker": ticker,
+                        "holder_name": name,
+                        "rel_type": rel_type,
+                        "share_count": count,
+                        "share_ratio": ratio
+                    })
+
+            if shareholders_data:
+                upsert_data(
+                    table="shareholders",
+                    data=shareholders_data,
+                    conflict_columns=["ticker", "holder_name"]
+                )
+                print(f"Saved {len(shareholders_data)} shareholders for {ticker}")
+
+        except Exception as e:
+            print(f"Error fetching shareholders: {e}")
 
 if __name__ == "__main__":
     collector = CompanyCollector()
     # Test resolution
     # print(collector.resolve_ticker("삼성전자"))
     collector.collect_and_save("005930")
+    collector.fetch_shareholders("005930")

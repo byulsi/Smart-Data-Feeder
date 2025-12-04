@@ -93,6 +93,18 @@ create table if not exists company_narratives (
   unique(ticker, period, section_type)
 );
 
+-- 7. Shareholders Table (NEW)
+create table if not exists shareholders (
+  id integer primary key autoincrement,
+  ticker varchar(10) references companies(ticker) not null,
+  holder_name varchar(100) not null,
+  rel_type varchar(50), -- Relation (e.g., 본인, 특수관계인)
+  share_count bigint,
+  share_ratio float, -- Percentage
+  created_at datetime default current_timestamp,
+  unique(ticker, holder_name)
+);
+
 -- Indexing for Performance
 create index if not exists idx_financials_ticker on financials(ticker);
 create index if not exists idx_disclosures_ticker on disclosures(ticker);

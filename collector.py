@@ -10,16 +10,17 @@ from datetime import datetime
 def collect_all(ticker):
     print(f"Starting data collection for {ticker}...")
     
-    # 1. Company Info
-    print("\n[1/4] Collecting Company Info...")
+    # 1. Company Info & Shareholders
+    print("\n[1/6] Collecting Company Info & Shareholders...")
     try:
         company_collector = CompanyCollector()
         company_collector.collect_and_save(ticker)
+        company_collector.fetch_shareholders(ticker)
     except Exception as e:
         print(f"Error collecting company info: {e}")
 
     # 2. Financials (Last 3 years)
-    print("\n[2/4] Collecting Financials...")
+    print("\n[2/6] Collecting Financials...")
     try:
         financials_collector = FinancialsCollector()
         current_year = datetime.now().year

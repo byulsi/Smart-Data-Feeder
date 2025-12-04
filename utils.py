@@ -114,6 +114,18 @@ def init_db():
         UNIQUE(ticker, period, section_type),
         FOREIGN KEY(ticker) REFERENCES companies(ticker)
     );
+
+    CREATE TABLE IF NOT EXISTS shareholders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ticker TEXT NOT NULL,
+        holder_name TEXT NOT NULL,
+        rel_type TEXT,
+        share_count INTEGER,
+        share_ratio REAL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(ticker, holder_name),
+        FOREIGN KEY(ticker) REFERENCES companies(ticker)
+    );
     """
     cursor.executescript(schema)
     conn.commit()
