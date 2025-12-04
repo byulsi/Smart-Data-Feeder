@@ -150,7 +150,26 @@ export default function Home() {
                 </div>
                 <div className="text-right">
                   <div className="text-sm text-gray-500 mb-1">최근 업데이트</div>
-                  <div className="font-medium">{new Date(data.company.updated_at).toLocaleDateString()}</div>
+                  <div className="font-medium mb-2">{new Date(data.company.updated_at).toLocaleDateString()}</div>
+                  <button
+                    onClick={() => handleCollect(data.company.ticker)}
+                    disabled={collecting}
+                    className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded transition-colors disabled:opacity-50 flex items-center gap-1 ml-auto"
+                  >
+                    {collecting ? (
+                      <>
+                        <span className="w-3 h-3 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></span>
+                        업데이트 중...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        데이터 업데이트
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
