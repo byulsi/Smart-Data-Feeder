@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: smart-data-feeder
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data.db:/app/data.db  # Persist SQLite database
+      - ./output:/app/output    # Persist generated reports
+    environment:
+      - DART_API_KEY=${DART_API_KEY}
+    restart: unless-stopped

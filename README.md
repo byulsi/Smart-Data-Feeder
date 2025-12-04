@@ -84,6 +84,25 @@ python3 collector.py 005930
 - `utils.py`: Database utility functions.
 - `collector.py`: Main entry point for data collection.
 
-## License
+## Deployment (Docker)
 
-MIT
+This application is containerized for easy deployment on any server (VPS, AWS, etc.).
+
+### Prerequisites
+- Docker & Docker Compose installed.
+- Valid `DART_API_KEY` in `.env` file.
+
+### Steps
+1.  **Build and Run**:
+    ```bash
+    docker-compose up -d --build
+    ```
+2.  **Access**: Open `http://localhost:3000`.
+3.  **Persistence**:
+    - `data.db` is mounted as a volume, so data survives container restarts.
+    - `output/` is mounted to access generated Markdown files directly if needed.
+
+### Stopping
+```bash
+docker-compose down
+```
