@@ -3,19 +3,30 @@ import db from '@/lib/db'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
-  const ticker = searchParams.get('ticker')
+  const query = searchParams.get('query') || searchParams.get('ticker')
 
-  if (!ticker) {
-    return NextResponse.json({ error: 'Ticker is required' }, { status: 400 })
+  if (!query) {
+    return NextResponse.json({ error: 'Query is required' }, { status: 400 })
   }
 
   try {
-    // 1. Fetch Company Info
-    const company = db.prepare('SELECT * FROM companies WHERE ticker = ?').get(ticker)
+    // 1. Fetch Company Info (Search by Ticker OR Name)
+    // Check if query is all digits (likely ticker)
+    const isTicker = /^\d+$/.test(query)
+    
+    let company;
+    if (isTicker) {
+      company = db.prepare('SELECT * FROM companies WHERE ticker = ?').get(query)
+    } else {
+      // Search by name (case-insensitive LIKE)
+      company = db.prepare('SELECT * FROM companies WHERE name LIKE ?').get(`%${query}%`)
+    }
 
     if (!company) {
       return NextResponse.json({ error: 'Company not found' }, { status: 404 })
     }
+    
+    const ticker = company.ticker; // Use the found company's ticker for subsequent queries
 
     // 2. Fetch Financials (Summary) - Latest year
     const financials = db.prepare('SELECT * FROM financials WHERE ticker = ? ORDER BY year DESC, quarter DESC LIMIT 1').get(ticker)

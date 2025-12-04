@@ -9,14 +9,14 @@ class MarkdownGenerator:
         self.conn = get_db_connection()
 
     def _fetch_company_info(self):
-        query = "SELECT * FROM companies WHERE ticker = %s"
+        query = "SELECT * FROM companies WHERE ticker = ?"
         return pd.read_sql(query, self.conn, params=(self.ticker,))
 
     def _fetch_financials(self):
         query = """
             SELECT year, quarter, revenue, op_profit, net_income, assets, liabilities, equity
             FROM financials 
-            WHERE ticker = %s 
+            WHERE ticker = ? 
             ORDER BY year DESC, quarter DESC
             LIMIT 4
         """
@@ -26,7 +26,7 @@ class MarkdownGenerator:
         query = """
             SELECT rcept_dt, report_nm, flr_nm, url
             FROM disclosures 
-            WHERE ticker = %s 
+            WHERE ticker = ? 
             ORDER BY rcept_dt DESC
             LIMIT 10
         """
@@ -45,6 +45,13 @@ class MarkdownGenerator:
         
         md = f"# {info['name']} ({self.ticker}) - Corporate Overview\n\n"
         md += f"**Sector:** {info['sector']} | **Market:** {info['market_type']}\n"
+        if info.get('est_dt'):
+            md += f"**Established:** {info['est_dt']} | "
+        if info.get('listing_dt'):
+            md += f"**Listed:** {info['listing_dt']}\n"
+        else:
+            md += "\n"
+            
         md += f"**Summary:** {info['desc_summary']}\n\n"
         
         md += "## 1. Financial Highlights (Recent)\n"
@@ -58,10 +65,28 @@ class MarkdownGenerator:
         else:
             md += "No financial data available.\n"
         
-        md += "\n\n## 2. Recent Disclosures\n"
+        # Dynamic Segment Performance
+        query = "SELECT * FROM company_segments WHERE ticker = ? ORDER BY division"
+        segments_df = pd.read_sql(query, self.conn, params=(self.ticker,))
+        
+        if not segments_df.empty:
+            # Assuming all segments are for the same period for now, or we filter by latest period
+            # For MVP, just take what's there.
+            period = segments_df.iloc[0]['period']
+            md += f"\n\n## 2. Segment Performance ({period})\n"
+            
+            for _, row in segments_df.iterrows():
+                md += f"- **{row['division']}:** Revenue {row['revenue']} / Op Profit {row['op_profit']}\n"
+                md += f"    - *Insight:* {row['insight']}\n"
+        
+        md += "\n\n## 3. Recent Disclosures\n"
         if not disclosures_df.empty:
             for _, row in disclosures_df.iterrows():
-                date_str = row['rcept_dt'].strftime('%Y-%m-%d')
+                rcept_dt = row['rcept_dt']
+                if isinstance(rcept_dt, str):
+                    date_str = rcept_dt
+                else:
+                    date_str = rcept_dt.strftime('%Y-%m-%d')
                 md += f"- **{date_str}** [{row['report_nm']}]({row['url']})\n"
         else:
             md += "No disclosures found.\n"
@@ -75,13 +100,58 @@ class MarkdownGenerator:
         # Since we haven't implemented text parsing in collector yet, we'll provide a structure.
         
         md = f"# {self.ticker} - Deep Dive Narratives\n\n"
+        
+        # Dynamic Narratives
+        query = "SELECT * FROM company_narratives WHERE ticker = ? ORDER BY period DESC, section_type"
+        narratives_df = pd.read_sql(query, self.conn, params=(self.ticker,))
+        
+        if not narratives_df.empty:
+            # Group by period (taking the latest one for now)
+            latest_period = narratives_df.iloc[0]['period']
+            md += f"## 분기보고서 ({latest_period}) Key Takeaways\n"
+            
+            # Filter for latest period
+            current_narratives = narratives_df[narratives_df['period'] == latest_period]
+            
+            # Group by Section Type
+            # Order: Key Takeaways -> Business Overview -> MD&A -> News
+            section_order = ["Key Takeaways", "Business Overview", "MD&A", "News"]
+            
+            for section in section_order:
+                section_data = current_narratives[current_narratives['section_type'] == section]
+                if not section_data.empty:
+                    # Map section type to display header
+                    display_header = section
+                    if section == "Business Overview":
+                        display_header = "1. Business Overview (사업의 내용)"
+                    elif section == "MD&A":
+                        display_header = "2. MD&A (이사의 경영진단 및 분석의견)"
+                    elif section == "News":
+                        display_header = "3. News & Conference Call Summary"
+                    elif section == "Key Takeaways":
+                        display_header = "Key Takeaways" # Already in title if we want, or subsection
+                        
+                    if section != "Key Takeaways": # Key Takeaways handled differently or just as a section
+                        md += f"## {display_header}\n"
+                    
+                    for _, row in section_data.iterrows():
+                        if row['title']:
+                            md += f"### {row['title']}\n"
+                        md += f"{row['content']}\n\n"
+            
+            return md
+
         md += "> [!NOTE]\n"
         md += "> Detailed text analysis will be available in the next update. Below are the direct links to recent reports.\n\n"
         
         disclosures_df = self._fetch_disclosures()
         if not disclosures_df.empty:
             for _, row in disclosures_df.iterrows():
-                date_str = row['rcept_dt'].strftime('%Y-%m-%d')
+                rcept_dt = row['rcept_dt']
+                if isinstance(rcept_dt, str):
+                    date_str = rcept_dt
+                else:
+                    date_str = rcept_dt.strftime('%Y-%m-%d')
                 md += f"## {row['report_nm']} ({date_str})\n"
                 md += f"**Link:** [View on DART]({row['url']})\n\n"
                 # Placeholder for parsed text

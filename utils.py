@@ -26,6 +26,8 @@ def init_db():
         name TEXT NOT NULL,
         sector TEXT,
         market_type TEXT,
+        est_dt TEXT,
+        listing_dt TEXT,
         desc_summary TEXT,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
@@ -74,6 +76,30 @@ def init_db():
         ma60 REAL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(ticker, date),
+        FOREIGN KEY(ticker) REFERENCES companies(ticker)
+    );
+
+    CREATE TABLE IF NOT EXISTS company_segments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ticker TEXT NOT NULL,
+        period TEXT NOT NULL,
+        division TEXT NOT NULL,
+        revenue TEXT,
+        op_profit TEXT,
+        insight TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(ticker, period, division),
+        FOREIGN KEY(ticker) REFERENCES companies(ticker)
+    );
+
+    CREATE TABLE IF NOT EXISTS company_narratives (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ticker TEXT NOT NULL,
+        period TEXT NOT NULL,
+        section_type TEXT NOT NULL,
+        title TEXT,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(ticker) REFERENCES companies(ticker)
     );
     """

@@ -10,21 +10,21 @@ export function cn(...inputs: (string | undefined | null | false)[]) {
 }
 
 export default function Home() {
-  const [ticker, setTicker] = useState('')
+  const [query, setQuery] = useState('')
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!ticker) return
+    if (!query) return
 
     setLoading(true)
     setError('')
     setData(null)
 
     try {
-      const res = await fetch(`/api/analyze?ticker=${ticker}`)
+      const res = await fetch(`/api/analyze?query=${encodeURIComponent(query)}`)
       if (!res.ok) {
         if (res.status === 404) throw new Error('Data not found. Please run the collector first.')
         throw new Error('Failed to fetch data')
@@ -39,7 +39,8 @@ export default function Home() {
   }
 
   const handleDownload = (type: string) => {
-    window.location.href = `/api/download?ticker=${ticker}&type=${type}`
+    if (!data) return
+    window.location.href = `/api/download?ticker=${data.company.ticker}&type=${type}`
   }
 
   return (
@@ -67,10 +68,10 @@ export default function Home() {
         <form onSubmit={handleSearch} className="max-w-md mx-auto relative">
           <input
             type="text"
-            placeholder="Enter Ticker (e.g., 005930)"
+            placeholder="Enter Ticker or Company Name"
             className="w-full h-14 pl-12 pr-4 rounded-full border border-slate-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-lg transition-all"
-            value={ticker}
-            onChange={(e) => setTicker(e.target.value)}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
           />
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-6 h-6" />
           <button 
@@ -103,6 +104,14 @@ export default function Home() {
                   <span>{data.company.market_type}</span>
                   <span>•</span>
                   <span>{data.company.sector}</span>
+                </div>
+                <div className="flex items-center gap-4 text-sm text-slate-500 mt-2">
+                  {data.company.est_dt && (
+                    <span>Est: {data.company.est_dt}</span>
+                  )}
+                  {data.company.listing_dt && (
+                    <span>Listed: {data.company.listing_dt}</span>
+                  )}
                 </div>
               </div>
               <div className="text-right">

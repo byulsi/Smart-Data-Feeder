@@ -1,6 +1,6 @@
 import os
-import requests
-import json
+import OpenDartReader
+import FinanceDataReader as fdr
 from datetime import datetime
 from utils import upsert_data
 from dotenv import load_dotenv
@@ -9,46 +9,45 @@ load_dotenv()
 
 class CompanyCollector:
     def __init__(self):
-        self.api_key = os.getenv("FSC_API_KEY") # Service Key for data.go.kr
-        self.base_url = "http://apis.data.go.kr/1160100/service/GetCorpBasicInfoService_V2/getCorpOutline_V2"
-
-    def fetch_company_info(self, ticker):
-        """
-        Fetches company basic information from FSC API.
-        Note: Ticker on data.go.kr might need to be 6 digits.
-        """
-        if not self.api_key:
-            print("Warning: FSC_API_KEY not found in .env")
-            return None
-
-        params = {
-            "serviceKey": self.api_key,
-            "pageNo": "1",
-            "numOfRows": "1",
-            "resultType": "json",
-            "crno": "", # Corporation Registration Number (optional)
-            "corpNm": "" # Corporation Name (optional)
-            # Note: This API often searches by name or CRNO, not directly by ticker (stock code).
-            # We might need a mapping or search by name if ticker isn't supported directly in this specific endpoint.
-            # However, let's assume we can search or we use OpenDART for the basic mapping first.
-        }
-        
-        # Strategy: The FSC 'GetCorpBasicInfoService' is a bit tricky with Tickers.
-        # Often OpenDART is better for getting the initial list of companies (Ticker -> Name, CorpCode).
-        # Let's try to use OpenDART to get the CorpCode/Name first if we only have Ticker.
-        
-        # For MVP, let's assume we might use OpenDartReader to get the basic info which is easier.
-        # The user's plan mentioned FSC API, but OpenDartReader is in requirements and is very robust for "Identity".
-        pass
+        self.api_key = os.getenv("DART_API_KEY")
+        if self.api_key:
+            self.dart = OpenDartReader(self.api_key)
+        else:
+            print("Warning: DART_API_KEY not found in .env")
+            self.dart = None
 
     def collect_and_save(self, ticker):
         print(f"Collecting company info for {ticker}...")
         
         try:
-            import FinanceDataReader as fdr
+            # 1. Basic Info from OpenDART (Identity)
+            # OpenDartReader usually takes corp_code, but can handle ticker if we use the right method or conversion.
+            # 'company' method returns basic info including establishment date.
             
-            # Fetch all KRX listings to find the specific ticker
-            # This might be heavy (2500 rows), but it's reliable for Sector/Name
+            est_dt = None
+            listing_dt = None
+            corp_name = None
+            
+            if self.dart:
+                try:
+                    # OpenDartReader's company() uses 'corp_code' usually. 
+                    # We need to find corp_code from ticker first.
+                    # self.dart.find_corp_code(ticker) returns corp_code
+                    corp_code = self.dart.find_corp_code(ticker)
+                    if corp_code:
+                        info = self.dart.company(corp_code)
+                        if info:
+                            # info is a dict
+                            corp_name = info.get('corp_name')
+                            est_dt = info.get('est_dt') # YYYYMMDD
+                            # listing_dt is not always in basic 'company' info, sometimes in other places.
+                            # But let's check what we get.
+                            # Actually OpenDart 'company' returns: status, message, corp_code, corp_name, corp_name_eng, stock_name, stock_code, ceo_nm, corp_cls, jurir_no, bizr_no, adres, hm_url, ir_url, phn_no, fax_no, induty_code, est_dt, acc_mt
+                except Exception as e:
+                    print(f"OpenDART fetch failed: {e}")
+
+            # 2. Market Info from FinanceDataReader (Sector, Market Type)
+            # This is robust for listed companies.
             df_krx = fdr.StockListing('KRX')
             company_row = df_krx[df_krx['Code'] == ticker]
             
@@ -58,20 +57,33 @@ class CompanyCollector:
 
             row = company_row.iloc[0]
             
-            # Map columns: Name, Sector, Market
-            # KRX columns: Code, ISU_CD, Name, Market, Dept, Close, ChangeCode, Changes, ChagesRatio, Open, High, Low, Volume, Amount, Marcap, Stocks, MarketId
-            # Note: 'Sector' column might be available in 'KRX-DELISTING' or other sources, but 'KRX' listing usually has 'Sector' or 'Industry'.
-            # Actually fdr.StockListing('KRX') returns: Code, ISU_CD, Name, Market, Dept, Close, ChangeCode, Changes, ChagesRatio, Open, High, Low, Volume, Amount, Marcap, Stocks, MarketId
-            # It seems 'Sector' is not directly in the default KRX listing from FDR recently?
-            # Let's check 'KRX-DESC' (Descriptive info) if available, but FDR merged it.
-            # Actually, let's just use what we have: Name, Market.
+            # Use KRX data for name if OpenDART failed or to be consistent with market data
+            final_name = row['Name']
+            market_type = row['Market']
+            sector = row.get('Sector', 'Unknown')
+            
+            # Listing Date from KRX if available
+            if 'ListingDate' in row:
+                listing_dt = str(row['ListingDate']) # Usually YYYY-MM-DD or datetime
+                # Format to YYYYMMDD if needed, or keep as is. Let's keep YYYYMMDD for consistency.
+                if hasattr(row['ListingDate'], 'strftime'):
+                    listing_dt = row['ListingDate'].strftime('%Y%m%d')
+                else:
+                    listing_dt = str(row['ListingDate']).replace('-', '')
+
+            # Summary
+            summary = f"{final_name} is a {market_type} listed company in the {sector} sector."
+            if est_dt:
+                summary += f" Established on {est_dt}."
             
             company_data = {
                 "ticker": ticker,
-                "name": row['Name'],
-                "sector": row.get('Sector', 'Unknown'), # Sector might be missing
-                "market_type": row['Market'],
-                "desc_summary": f"{row['Name']} is listed on {row['Market']}.", # Simple summary
+                "name": final_name,
+                "sector": sector,
+                "market_type": market_type,
+                "est_dt": est_dt,
+                "listing_dt": listing_dt,
+                "desc_summary": summary,
                 "updated_at": datetime.now()
             }
             
@@ -80,7 +92,7 @@ class CompanyCollector:
                 data=[company_data],
                 conflict_columns=["ticker"]
             )
-            print(f"Saved company info for {ticker}: {row['Name']}")
+            print(f"Saved company info for {ticker}: {final_name}")
             
         except Exception as e:
             print(f"Error collecting company info: {e}")
