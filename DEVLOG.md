@@ -1,11 +1,36 @@
-# Development Log
+# 개발 일지 (Development Log)
 
-### Verification
-- **End-to-End Test**: Reset database (`rm data.db`) and ran full collection for 005930.
-- **Artifacts**: `Overview.md` and `Narratives.md` generated with correct data.
-- **Web App**: Verified UI displays new fields and download links work.
+## 2025-12-04: 프론트엔드 개편 및 배포 준비 (Phase 13-16)
 
-### Next Steps (Post-MVP)
-- **LLM Integration**: Implement RAG pipeline to answer questions based on `Narratives.md`.
-- **Chart Visualization**: Add charts for Financials and Segments in the Web UI.
-- **Multi-Company Support**: Test and refine parsers for other companies (e.g., Hyundai Motor, SK Hynix).
+### 1. 프론트엔드 업그레이드 (Phase 13)
+- **UI 디자인 개편**: 기본 UI를 세련된 "글래스모피즘(Glassmorphism)" 다크 테마로 교체했습니다.
+- **데이터 시각화**: `Recharts` 라이브러리를 도입하여 다음 데이터를 시각화했습니다:
+    - 재무 추세 (매출액, 영업이익, 순이익).
+    - 투자 지표 (PER, PBR, ROE).
+- **심층 데이터**: R&D 비용 및 주요 주주 현황 섹션을 추가했습니다.
+- **UX 개선**: 로딩 상태 표시 및 에러 처리를 강화하여 검색 경험을 개선했습니다.
+
+### 2. 문서화 및 현지화 (Phase 14)
+- **Walkthrough**: `walkthrough.md`를 한국어로 번역하여 접근성을 높였습니다.
+- **배포 가이드**: `DEPLOYMENT.md`에 초보자용 "문제 해결(Troubleshooting)" 섹션을 추가했습니다.
+
+### 3. 배포 전략 (Phase 15-16)
+- **플랫폼 선정**: Render, AWS, Oracle을 비교 분석한 결과, SQLite 호환성과 비용(0원) 측면에서 **AWS EC2 프리 티어**를 선정했습니다.
+- **계획 수립**: 인프라 사양(t2.micro, Ubuntu 22.04)을 상세히 담은 `deployment_plan.md`를 작성했습니다.
+- **빠른 시작**: `DEPLOYMENT.md`에 "복사-붙여넣기"만으로 가능한 AWS 빠른 시작 가이드를 추가했습니다.
+
+### 4. 마무리
+- **정리**: 불필요한 디버그 스크립트(`debug_*.py`)를 삭제했습니다.
+- **버전 관리**: 모든 변경 사항을 GitHub `main` 브랜치에 푸시했습니다.
+
+---
+
+### 검증 (Verification)
+- **엔드투엔드 테스트**: 데이터베이스를 초기화(`rm data.db`)하고 삼성전자(005930)에 대해 전체 수집을 실행했습니다.
+- **결과물**: `Overview.md`와 `Narratives.md`가 정확한 데이터로 생성됨을 확인했습니다.
+- **웹 앱**: UI에 새로운 필드가 표시되고 다운로드 링크가 정상 작동함을 확인했습니다.
+
+### 다음 단계 (Post-MVP)
+- **LLM 통합**: `Narratives.md`를 기반으로 질문에 답변하는 RAG 파이프라인 구현.
+- **차트 시각화**: 웹 UI에 재무 및 사업 부문별 차트 추가.
+- **다중 기업 지원**: 현대차, SK하이닉스 등 다른 기업에 대한 파서 테스트 및 개선.

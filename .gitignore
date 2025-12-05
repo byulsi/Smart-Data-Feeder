@@ -42,3 +42,4 @@ test_api.py
 web/test-db.js
 docs_cache/
 find_region.py
+output/
