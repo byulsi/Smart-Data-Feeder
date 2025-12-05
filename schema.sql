@@ -34,6 +34,8 @@ create table if not exists financials (
   roa float, -- Return on Assets
   debt_ratio float, -- Liabilities / Equity
   current_ratio float, -- Current Assets / Current Liabilities
+  per float, -- Price Earnings Ratio
+  pbr float, -- Price Book-value Ratio
   rnd_expenses bigint, -- Research & Development Expenses
   is_estimated boolean default false,
   created_at datetime default current_timestamp,
@@ -112,3 +114,12 @@ create index if not exists idx_disclosures_ticker on disclosures(ticker);
 create index if not exists idx_market_daily_ticker on market_daily(ticker);
 create index if not exists idx_company_segments_ticker on company_segments(ticker);
 create index if not exists idx_company_narratives_ticker on company_narratives(ticker);
+
+-- 8. Feedbacks Table (NEW)
+create table if not exists feedbacks (
+  id integer primary key autoincrement,
+  type varchar(50) not null, -- 'bug', 'suggestion', 'other'
+  content text not null,
+  contact varchar(100),
+  created_at datetime default current_timestamp
+);

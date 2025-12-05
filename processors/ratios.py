@@ -72,21 +72,36 @@ class RatioCalculator:
                     current_ratio = (current_assets / current_liabilities) * 100
 
                 # 7. PER & PBR (Valuation)
-                # Note: This is a snapshot based on current market cap or close price.
-                # For historical PER, we need historical price.
-                # Here we calculate "Trailing PER" based on the financial report's EPS and *current* price?
-                # Or *price at that time*?
-                # For simplicity in this MVP, let's calculate based on the *latest* market cap if it's the latest report.
-                # But actually, it's better to leave PER/PBR for the frontend to calculate using real-time price,
-                # OR calculate it here if we want to store it.
-                # Let's store it if it's the latest available financial report.
+                per = 0
+                pbr = 0
                 
-                # We will just store EPS/BPS here. PER/PBR can be derived.
-                # But the user asked for "Investment Indicators".
-                # Let's calculate PER/PBR if we have price data.
-                # We can fetch the close price for the report date?
-                # Let's stick to fundamental ratios first.
+                # Determine approximate quarter end date
+                # Q1: 03-31, Q2: 06-30, Q3: 09-30, Q4: 12-31
+                # For yearly (Q0), use 12-31
+                q_month = {1: '03', 2: '06', 3: '09', 4: '12', 0: '12'}.get(row['quarter'], '12')
+                q_day = {1: '31', 2: '30', 3: '30', 4: '31', 0: '31'}.get(row['quarter'], '31')
+                target_date = f"{row['year']}-{q_month}-{q_day}"
                 
+                # Fetch close price near this date
+                # We need to find the closest available trading day on or before target_date
+                cursor.execute("""
+                    SELECT close FROM market_daily 
+                    WHERE ticker = ? AND date <= ? 
+                    ORDER BY date DESC LIMIT 1
+                """, (ticker, target_date))
+                price_row = cursor.fetchone()
+                
+                if price_row:
+                    price = price_row['close']
+                    
+                    # Calculate PER (Price / EPS)
+                    if eps > 0:
+                        per = price / eps
+                        
+                    # Calculate PBR (Price / BPS)
+                    if bps > 0:
+                        pbr = price / bps
+
                 update_data = {
                     "ticker": ticker,
                     "year": row['year'],
@@ -96,7 +111,9 @@ class RatioCalculator:
                     "roe": round(roe, 2),
                     "roa": round(roa, 2),
                     "debt_ratio": round(debt_ratio, 2),
-                    "current_ratio": round(current_ratio, 2)
+                    "current_ratio": round(current_ratio, 2),
+                    "per": round(per, 2),
+                    "pbr": round(pbr, 2)
                 }
                 updates.append(update_data)
 
@@ -106,7 +123,7 @@ class RatioCalculator:
                     table="financials",
                     data=updates,
                     conflict_columns=["ticker", "year", "quarter"],
-                    update_columns=["eps", "bps", "roe", "roa", "debt_ratio", "current_ratio"]
+                    update_columns=["eps", "bps", "roe", "roa", "debt_ratio", "current_ratio", "per", "pbr"]
                 )
                 print(f"Updated ratios for {len(updates)} financial records.")
 
