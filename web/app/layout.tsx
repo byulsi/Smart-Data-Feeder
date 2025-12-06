@@ -1,29 +1,39 @@
-import './globals.css'
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import { ThemeProvider } from '@/components/ThemeProvider'
-import { MobileNav } from '@/components/layout/MobileNav'
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+import { ThemeProvider } from 'next-themes'
+import { FeedbackWidget } from '@/components/FeedbackWidget'
 
-const inter = Inter({ subsets: ['latin'] })
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
 
 export const metadata: Metadata = {
-  title: 'Smart Data Feeder',
-  description: 'Financial data collection and analysis platform',
-}
+  title: 'Antz (앤츠)',
+  description: '개미들을 위한 똑똑한 투자 데이터 & AI 가이드',
+};
 
 export default function RootLayout({
   children,
-}: {
-  children: React.ReactNode
-}) {
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
-          <MobileNav />
+          <FeedbackWidget />
         </ThemeProvider>
       </body>
     </html>
-  )
+  );
 }

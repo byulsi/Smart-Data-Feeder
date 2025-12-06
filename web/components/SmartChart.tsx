@@ -28,9 +28,9 @@ export function SmartChart({ market, height = 400 }: SmartChartProps) {
       low: Number(d.low),
       close: Number(d.close),
       volume: Number(d.volume),
-      ma5: Number(d.ma5),
-      ma20: Number(d.ma20),
-      ma60: Number(d.ma60),
+      ma5: d.ma5 ? Number(d.ma5) : null,
+      ma20: d.ma20 ? Number(d.ma20) : null,
+      ma60: d.ma60 ? Number(d.ma60) : null,
       // For candle color
       isUp: Number(d.close) >= Number(d.open)
     }))
@@ -126,9 +126,10 @@ export function SmartChart({ market, height = 400 }: SmartChartProps) {
           <Bar dataKey="volume" yAxisId="volume" fill="var(--muted-foreground)" barSize={4} radius={[2, 2, 0, 0]} opacity={0.3} />
 
           {/* Moving Averages */}
-          <Line type="monotone" dataKey="ma5" yAxisId="price" stroke="#fbbf24" dot={false} strokeWidth={1} name="MA5" />
-          <Line type="monotone" dataKey="ma20" yAxisId="price" stroke="#f87171" dot={false} strokeWidth={1} name="MA20" />
-          <Line type="monotone" dataKey="ma60" yAxisId="price" stroke="#34d399" dot={false} strokeWidth={1} name="MA60" />
+          {/* Moving Averages */}
+          <Line type="monotone" dataKey="ma5" yAxisId="price" stroke="#fbbf24" dot={false} strokeWidth={1} name="MA5" connectNulls />
+          <Line type="monotone" dataKey="ma20" yAxisId="price" stroke="#f87171" dot={false} strokeWidth={1} name="MA20" connectNulls />
+          <Line type="monotone" dataKey="ma60" yAxisId="price" stroke="#34d399" dot={false} strokeWidth={1} name="MA60" connectNulls />
 
           {/* Candle Body (Floating Bar) */}
           <Bar dataKey="body" yAxisId="price" barSize={8}>

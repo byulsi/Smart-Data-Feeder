@@ -45,17 +45,7 @@ export function FinancialCharts({ financials, shareholders }: FinancialChartsPro
 
       {/* R&D & Shareholders */}
       <div className="space-y-4">
-         {/* R&D Card */}
-         <div className="bg-card border border-border rounded-2xl p-4 md:p-6 shadow-sm">
-            <h3 className="text-base md:text-lg font-bold text-foreground mb-3 md:mb-4 flex items-center gap-2">
-              <Activity className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
-              연구개발비 (R&D)
-            </h3>
-            <div className="text-2xl md:text-3xl font-bold text-foreground mb-1">
-              {formatMoney(financials[0]?.rnd_expenses)}
-            </div>
-            <div className="text-xs md:text-sm text-muted-foreground">최근 연간/분기 지출</div>
-         </div>
+
 
          {/* Shareholders Card */}
          <div className="bg-card border border-border rounded-2xl p-4 md:p-6 flex-1 shadow-sm">
