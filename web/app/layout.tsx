@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Smart Data Feeder",
-  description: "AI-powered financial data analysis",
+  title: 'Antz (앤츠)',
+  description: '개미들을 위한 똑똑한 투자 데이터 & AI 가이드',
 };
 
 export default function RootLayout({

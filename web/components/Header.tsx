@@ -11,10 +11,10 @@ export function Header() {
             <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-primary-foreground" />
           </div>
           <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
-            Smart Data Feeder
+            Antz (앤츠) 🐜
           </h1>
           <span className="hidden md:inline-block px-2 py-0.5 bg-secondary text-secondary-foreground text-xs font-medium rounded-full border border-border">
-            v2.0 Enterprise
+            v2.0 엔터프라이즈
           </span>
         </div>
         

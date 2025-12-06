@@ -2,7 +2,9 @@ import sqlite3
 import os
 from datetime import datetime, date
 
-DB_FILE = "data.db"
+# Use absolute path for DB_FILE to ensure it works from any CWD
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_FILE = os.path.join(BASE_DIR, "data.db")
 
 def get_db_connection():
     """Establishes a connection to the local SQLite database."""
