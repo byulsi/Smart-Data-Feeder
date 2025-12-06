@@ -1,6 +1,6 @@
-# ☁️ AWS EC2 배포 가이드 (Smart Data Feeder)
+# ☁️ AWS EC2 배포 가이드 (Antz)
 
-이 가이드는 **Smart Data Feeder** 프로젝트를 AWS EC2(Elastic Compute Cloud) 인스턴스에 배포하는 전체 과정을 단계별로 설명합니다.
+이 가이드는 **Antz** 프로젝트를 AWS EC2(Elastic Compute Cloud) 인스턴스에 배포하는 전체 과정을 단계별로 설명합니다.
 
 ---
 
@@ -15,7 +15,7 @@
 ### 1.2. 인스턴스 설정
 다음 설정값들을 입력/선택합니다:
 
-*   **이름 및 태그**: `Smart-Data-Feeder` (원하는 이름)
+*   **이름 및 태그**: `Antz` (원하는 이름)
 *   **애플리케이션 및 OS 이미지**: `Ubuntu` 선택
     *   Amazon Machine Image (AMI): **Ubuntu Server 22.04 LTS** (프리 티어 사용 가능)
 *   **인스턴스 유형**: `t2.micro` (프리 티어 사용 가능)

@@ -40,7 +40,7 @@ if [ "$1" == "collect" ]; then
 elif [ "$1" == "web" ]; then
     run_web
 else
-    echo "Smart Data Feeder - Easy Runner"
+    echo "Antz - Easy Runner"
     echo "-------------------------------"
     echo "1. To collect data:  ./run.sh collect [Ticker]"
     echo "   Example: ./run.sh collect 005930"

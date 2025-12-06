@@ -75,7 +75,40 @@ class CompanyCollector:
                     shares_outstanding = int(row.get('Stocks', 0))
             except Exception as e:
                 print(f"Warning: FDR market info fetch failed: {e}")
-                # Continue with OpenDart data if available
+                
+            # 3. Fallback: Naver Finance for Sector (if Unknown)
+            if sector == 'Unknown':
+                try:
+                    import requests
+                    from bs4 import BeautifulSoup
+                    
+                    url = f"https://finance.naver.com/item/main.nhn?code={ticker}"
+                    headers = {'User-Agent': 'Mozilla/5.0'}
+                    res = requests.get(url, headers=headers)
+                    soup = BeautifulSoup(res.text, 'html.parser')
+                    
+                    # Sector is usually in <h4 class="h_sub sub_tit7"> or similar
+                    # Actually, it's often in the 'Trade Info' or 'Analysis' section.
+                    # A reliable place: <h4 class="h_sub sub_tit7"><span>업종명</span></h4>
+                    # But simpler: look for the sector link
+                    # <a href="/sise/sise_group_detail.nhn?type=upjong&no=...">SectorName</a>
+                    
+                    # Try to find the sector link in the 'Trade Compare' section
+                    # <div class="section trade_compare"> ... <a href="...">SectorName</a>
+                    
+                    trade_compare = soup.find('div', {'class': 'section trade_compare'})
+                    if trade_compare:
+                        h4 = trade_compare.find('h4')
+                        if h4:
+                            em = h4.find('em')
+                            if em:
+                                a_tag = em.find('a')
+                                if a_tag:
+                                    sector = a_tag.text.strip()
+                                    print(f"Fetched Sector from Naver: {sector}")
+                                    
+                except Exception as e:
+                    print(f"Naver Finance sector fetch failed: {e}")
 
             # Summary
             summary = f"{final_name} is a {market_type} listed company in the {sector} sector."

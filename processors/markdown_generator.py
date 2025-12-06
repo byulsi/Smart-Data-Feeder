@@ -23,7 +23,7 @@ class MarkdownGenerator:
             FROM financials 
             WHERE ticker = ? 
             ORDER BY year DESC, quarter DESC
-            LIMIT 4
+            LIMIT 10
         """
         return pd.read_sql(query, self.conn, params=(self.ticker,))
 
@@ -61,15 +61,81 @@ class MarkdownGenerator:
         
         md += "## 1. Financial Highlights (Recent)\n"
         if not financials_df.empty:
-            # Format numbers
-            financials_df['revenue'] = financials_df['revenue'].apply(lambda x: f"{x:,}")
-            financials_df['op_profit'] = financials_df['op_profit'].apply(lambda x: f"{x:,}")
-            financials_df['net_income'] = financials_df['net_income'].apply(lambda x: f"{x:,}")
-            if 'rnd_expenses' in financials_df.columns:
-                financials_df['rnd_expenses'] = financials_df['rnd_expenses'].apply(lambda x: f"{x:,}" if pd.notnull(x) else "-")
-                financials_df = financials_df.rename(columns={'rnd_expenses': 'R&D Expenses'})
+            # Helper to find latest valid value
+            def get_latest_valid(df, col, current_idx):
+                for i in range(current_idx + 1, len(df)):
+                    val = df.iloc[i][col]
+                    if pd.notnull(val) and val != 0 and val != '-':
+                        return val, df.iloc[i]['year'], df.iloc[i]['quarter']
+                return None, None, None
+
+            # Process data for display
+            display_rows = []
+            # We fetched 10 rows, but we only want to display top 4 *after* filling gaps if needed.
+            # Actually, we just process the top 4 rows, looking ahead for fallbacks.
             
-            md += financials_df.to_markdown(index=False)
+            # Create a copy for display to avoid modifying the original dataframe logic if needed later
+            display_df = financials_df.copy()
+            
+            # Ensure columns are object type to avoid FutureWarning when setting strings
+            cols_to_convert = ['revenue', 'op_profit', 'net_income']
+            if 'rnd_expenses' in display_df.columns:
+                cols_to_convert.append('rnd_expenses')
+            
+            for col in cols_to_convert:
+                display_df[col] = display_df[col].astype('object')
+            
+            for idx in range(min(4, len(display_df))):
+                row = display_df.iloc[idx]
+                
+                # Process Revenue
+                if pd.isnull(row['revenue']) or row['revenue'] == 0:
+                    val, y, q = get_latest_valid(financials_df, 'revenue', idx)
+                    if val:
+                        y_str = str(int(y))
+                        q_str = f".{int(q)}Q" if int(q) > 0 else ""
+                        display_df.at[idx, 'revenue'] = f"{int(val):,} ({y_str}{q_str})"
+                    else:
+                        display_df.at[idx, 'revenue'] = "-"
+                else:
+                    display_df.at[idx, 'revenue'] = f"{int(row['revenue']):,}"
+
+                # Process Op Profit
+                if pd.isnull(row['op_profit']) or row['op_profit'] == 0:
+                    val, y, q = get_latest_valid(financials_df, 'op_profit', idx)
+                    if val:
+                        y_str = str(int(y))
+                        q_str = f".{int(q)}Q" if int(q) > 0 else ""
+                        display_df.at[idx, 'op_profit'] = f"{int(val):,} ({y_str}{q_str})"
+                    else:
+                        display_df.at[idx, 'op_profit'] = "-"
+                else:
+                    display_df.at[idx, 'op_profit'] = f"{int(row['op_profit']):,}"
+
+                # Process Net Income
+                if pd.isnull(row['net_income']) or row['net_income'] == 0:
+                    val, y, q = get_latest_valid(financials_df, 'net_income', idx)
+                    if val:
+                        y_str = str(int(y))
+                        q_str = f".{int(q)}Q" if int(q) > 0 else ""
+                        display_df.at[idx, 'net_income'] = f"{int(val):,} ({y_str}{q_str})"
+                    else:
+                        display_df.at[idx, 'net_income'] = "-"
+                else:
+                    display_df.at[idx, 'net_income'] = f"{int(row['net_income']):,}"
+
+                # Process R&D (No fallback needed usually, but format it)
+                if 'rnd_expenses' in display_df.columns:
+                    if pd.notnull(row['rnd_expenses']):
+                        display_df.at[idx, 'rnd_expenses'] = f"{int(row['rnd_expenses']):,}"
+                    else:
+                        display_df.at[idx, 'rnd_expenses'] = "-"
+
+            # Rename and slice
+            if 'rnd_expenses' in display_df.columns:
+                display_df = display_df.rename(columns={'rnd_expenses': 'R&D Expenses'})
+            
+            md += display_df.head(4).to_markdown(index=False)
         else:
             md += "No financial data available.\n"
         

@@ -100,6 +100,12 @@ class FinancialsCollector:
 
             current_assets = get_amount(fs_cfs, ['유동자산'])
             current_liabilities = get_amount(fs_cfs, ['유동부채'])
+            
+            # R&D Expenses (경상연구개발비, 연구개발비)
+            # Note: This might be in '판관비' details or separate. 
+            # We try to find it in the full list if possible, but finstate() usually returns main accounts.
+            # If not found, it stays 0.
+            rnd_expenses = get_amount(fs_cfs, ['연구개발비', '경상연구개발비', '연구개발비(판관비)'])
 
             financial_data = {
                 "ticker": ticker,
@@ -113,6 +119,7 @@ class FinancialsCollector:
                 "equity": equity,
                 "current_assets": current_assets,
                 "current_liabilities": current_liabilities,
+                "rnd_expenses": rnd_expenses,
                 "ocf": 0, 
                 "is_estimated": False
             }

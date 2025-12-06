@@ -45,3 +45,8 @@
 ### 2. 모듈 임포트 오류 수정
 - **경로 문제 해결**: `processors/markdown_generator.py`를 단독으로 실행할 때 `utils` 모듈을 찾지 못하는 문제를 해결하기 위해 프로젝트 루트 경로를 `sys.path`에 추가했습니다.
 
+
+### 3. 리브랜딩: Antz (Phase 17)
+- **이름 변경**: 프로젝트 이름을 "Smart Data Feeder"에서 "**Antz**"로 변경했습니다.
+- **코드베이스 업데이트**: `package.json`, `layout.tsx`, `Header.tsx` 등 주요 파일에서 애플리케이션 이름을 업데이트했습니다.
+- **문서 현행화**: `README.md`, `DEPLOYMENT.md`, `AWS_EC2_GUIDE.md` 등 모든 문서에서 프로젝트 명칭을 일괄 변경했습니다.

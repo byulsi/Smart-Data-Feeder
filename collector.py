@@ -59,7 +59,7 @@ def collect_all(ticker):
     print(f"\nData collection for {ticker} completed.")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Smart Data Feeder Collector")
+    parser = argparse.ArgumentParser(description="Antz Collector")
     parser.add_argument("ticker", type=str, help="Stock ticker (e.g., 005930) or Name (e.g., 삼성전자)")
     args = parser.parse_args()
     

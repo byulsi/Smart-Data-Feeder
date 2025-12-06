@@ -1,6 +1,6 @@
-# Smart Data Feeder (MVP)
+# Antz (MVP)
 
-Smart Data Feeder is a Python-based data collection and processing pipeline designed to feed high-quality financial data into LLMs (Large Language Models) like Gemini. It fetches data from DART (OpenDART) and FinanceDataReader, processes it into structured formats (Markdown, CSV), and provides a simple web interface for easy access.
+Antz is a Python-based data collection and processing pipeline designed to feed high-quality financial data into LLMs (Large Language Models) like Gemini. It fetches data from DART (OpenDART) and FinanceDataReader, processes it into structured formats (Markdown, CSV), and provides a simple web interface for easy access.
 
 ## 🚀 Key Features
 
@@ -71,7 +71,7 @@ Smart Data Feeder is a Python-based data collection and processing pipeline desi
 
 ### Running the Web App (Recommended)
 
-The easiest way to use the Smart Data Feeder is via the Web UI.
+The easiest way to use Antz is via the Web UI.
 
 ```bash
 cd web

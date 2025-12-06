@@ -42,12 +42,16 @@ export async function GET(request: Request) {
     // 5. Fetch Segments (Latest period)
     const segments = db.prepare('SELECT * FROM company_segments WHERE ticker = ? ORDER BY period DESC LIMIT 10').all(ticker)
 
+    // 6. Fetch Narratives (Latest 10)
+    const narratives = db.prepare('SELECT * FROM company_narratives WHERE ticker = ? ORDER BY period DESC, id ASC LIMIT 10').all(ticker)
+
     return NextResponse.json({
       company,
       financials: financials || [],
       market: market || [],
       shareholders: shareholders || [],
-      segments: segments || []
+      segments: segments || [],
+      narratives: narratives || []
     })
   } catch (error: any) {
     console.error('Database error:', error)

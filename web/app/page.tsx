@@ -1,20 +1,17 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Header } from '@/components/Header'
 import { SearchSection } from '@/components/SearchSection'
-import { CompanySnapshot } from '@/components/CompanySnapshot'
-import { MetricsGrid } from '@/components/MetricsGrid'
-import { FinancialCharts } from '@/components/FinancialCharts'
-import { DownloadSection } from '@/components/DownloadSection'
 import { UsageGuide } from '@/components/UsageGuide'
 
 export default function Home() {
   const [query, setQuery] = useState('')
-  const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [collecting, setCollecting] = useState(false)
+  const router = useRouter()
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,16 +19,19 @@ export default function Home() {
 
     setLoading(true)
     setError('')
-    setData(null)
 
     try {
+      // Check if data exists first
       const res = await fetch(`/api/analyze?query=${encodeURIComponent(query)}`)
       if (!res.ok) {
         if (res.status === 404) throw new Error('Data not found. Please run the collector first.')
         throw new Error('Failed to fetch data')
       }
       const json = await res.json()
-      setData(json)
+      
+      // Redirect to analysis page
+      router.push(`/analysis/${json.company.ticker}`)
+      
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -54,8 +54,11 @@ export default function Home() {
         throw new Error(json.error || 'Collection failed')
       }
       
-      // Success! Retry search
-      handleSearch(new Event('submit') as any)
+      // Success! Redirect to analysis
+      // We assume the ticker is what we searched for. 
+      // Ideally the API returns the ticker, but we can use the input for now.
+      // Wait a bit for DB to settle? usually fast enough.
+      router.push(`/analysis/${ticker}`)
       
     } catch (err: any) {
       setError(err.message)
@@ -64,50 +67,35 @@ export default function Home() {
     }
   }
 
-  const handleDownload = (type: string) => {
-    if (!data) return
-    window.location.href = `/api/download?ticker=${data.company.ticker}&type=${type}`
-  }
-
   return (
-    <main className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-primary-foreground">
+    <main className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-primary-foreground flex flex-col">
       <Header />
 
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-12">
-        <SearchSection 
-          query={query}
-          setQuery={setQuery}
-          handleSearch={handleSearch}
-          loading={loading}
-          error={error}
-          collecting={collecting}
-          handleCollect={handleCollect}
-        />
-
-        {/* Results Section */}
-        {data ? (
-          <div className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <CompanySnapshot 
-              company={data.company}
-              market={data.market}
-              segments={data.segments}
-            />
-
-            <MetricsGrid 
-              company={data.company}
-              financials={data.financials}
-            />
-
-            <FinancialCharts 
-              financials={data.financials}
-              shareholders={data.shareholders}
-            />
-
-            <DownloadSection handleDownload={handleDownload} />
+      <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-6 -mt-20">
+        <div className="w-full max-w-2xl space-y-8">
+          <div className="text-center space-y-4">
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+              Smart Investment Analysis
+            </h1>
+            <p className="text-muted-foreground text-lg">
+              AI-powered insights for smarter decisions.
+            </p>
           </div>
-        ) : (
-          <UsageGuide />
-        )}
+
+          <SearchSection 
+            query={query}
+            setQuery={setQuery}
+            handleSearch={handleSearch}
+            loading={loading}
+            error={error}
+            collecting={collecting}
+            handleCollect={handleCollect}
+          />
+          
+          <div className="pt-8">
+             <UsageGuide />
+          </div>
+        </div>
       </div>
     </main>
   )
