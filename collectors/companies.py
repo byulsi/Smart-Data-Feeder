@@ -48,32 +48,34 @@ class CompanyCollector:
 
             # 2. Market Info from FinanceDataReader (Sector, Market Type)
             # This is robust for listed companies.
-            df_krx = fdr.StockListing('KRX')
-            company_row = df_krx[df_krx['Code'] == ticker]
+            sector = 'Unknown'
+            market_type = 'Unknown'
+            final_name = corp_name if corp_name else ticker
             
-            if company_row.empty:
-                print(f"Company {ticker} not found in KRX listing.")
-                return
+            try:
+                df_krx = fdr.StockListing('KRX')
+                company_row = df_krx[df_krx['Code'] == ticker]
+                
+                if not company_row.empty:
+                    row = company_row.iloc[0]
+                    final_name = row['Name']
+                    market_type = row['Market']
+                    sector = row.get('Sector', 'Unknown')
+                    
+                    # Listing Date from KRX if available
+                    if 'ListingDate' in row:
+                        listing_dt = str(row['ListingDate'])
+                        if hasattr(row['ListingDate'], 'strftime'):
+                            listing_dt = row['ListingDate'].strftime('%Y%m%d')
+                        else:
+                            listing_dt = str(row['ListingDate']).replace('-', '')
 
-            row = company_row.iloc[0]
-            
-            # Use KRX data for name if OpenDART failed or to be consistent with market data
-            final_name = row['Name']
-            market_type = row['Market']
-            sector = row.get('Sector', 'Unknown')
-            
-            # Listing Date from KRX if available
-            if 'ListingDate' in row:
-                listing_dt = str(row['ListingDate']) # Usually YYYY-MM-DD or datetime
-                # Format to YYYYMMDD if needed, or keep as is. Let's keep YYYYMMDD for consistency.
-                if hasattr(row['ListingDate'], 'strftime'):
-                    listing_dt = row['ListingDate'].strftime('%Y%m%d')
-                else:
-                    listing_dt = str(row['ListingDate']).replace('-', '')
-
-            # Market Cap and Shares
-            market_cap = int(row.get('Marcap', 0))
-            shares_outstanding = int(row.get('Stocks', 0))
+                    # Market Cap and Shares
+                    market_cap = int(row.get('Marcap', 0))
+                    shares_outstanding = int(row.get('Stocks', 0))
+            except Exception as e:
+                print(f"Warning: FDR market info fetch failed: {e}")
+                # Continue with OpenDart data if available
 
             # Summary
             summary = f"{final_name} is a {market_type} listed company in the {sector} sector."
@@ -87,8 +89,8 @@ class CompanyCollector:
                 "market_type": market_type,
                 "est_dt": est_dt,
                 "listing_dt": listing_dt,
-                "market_cap": market_cap,
-                "shares_outstanding": shares_outstanding,
+                "market_cap": locals().get('market_cap', 0),
+                "shares_outstanding": locals().get('shares_outstanding', 0),
                 "desc_summary": summary,
                 "updated_at": datetime.now()
             }
@@ -113,7 +115,26 @@ class CompanyCollector:
             return name_or_ticker
             
         print(f"Resolving ticker for '{name_or_ticker}'...")
+        
+        # 1. Try OpenDartReader first (More reliable for API key holders)
+        if self.dart:
+            try:
+                # print("Attempting resolution using OpenDartReader...")
+                corp_code = self.dart.find_corp_code(name_or_ticker)
+                if corp_code:
+                    info = self.dart.company(corp_code)
+                    if info and info.get('stock_code'):
+                        stock_code = info.get('stock_code')
+                        if stock_code and stock_code.strip():
+                            print(f"Resolved via OpenDart: {stock_code.strip()}")
+                            return stock_code.strip()
+            except Exception as e:
+                print(f"OpenDart resolution failed: {e}")
+
+        # 2. Fallback: FinanceDataReader (KRX)
+        # Note: FDR might hang in some environments
         try:
+            print("Attempting fallback resolution using FinanceDataReader...")
             # Download stock listing
             df = fdr.StockListing('KRX')
             
@@ -131,11 +152,11 @@ class CompanyCollector:
                 print(f"Found '{found_name}' ({found_code})")
                 return found_code
                 
-            print(f"Could not resolve ticker for '{name_or_ticker}'")
-            return None
         except Exception as e:
-            print(f"Error resolving ticker: {e}")
-            return None
+            print(f"FinanceDataReader resolution failed: {e}")
+
+        print(f"Could not resolve ticker for '{name_or_ticker}'")
+        return None
 
     def fetch_shareholders(self, ticker):
         """

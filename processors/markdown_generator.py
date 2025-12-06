@@ -1,4 +1,9 @@
+import sys
 import os
+
+# Add project root to sys.path to allow importing utils
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import pandas as pd
 from utils import get_db_connection
 from datetime import datetime
